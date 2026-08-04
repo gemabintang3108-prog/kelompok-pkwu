@@ -1,5 +1,5 @@
 /* ============================================================
-   AKAR NUSANTARA — Landing Page PKWU
+   PENTAVA — Landing Page PKWU
    Token sistem desain: hijau botani + emas kunyit + krem parchment
    ============================================================ */
 
@@ -293,6 +293,16 @@ button{ font-family: inherit; cursor: pointer; }
   gap: 50px;
   align-items: center;
 }
+.produk-utama__foto{
+  width: 100%;
+  border-radius: var(--radius);
+  aspect-ratio: 3/2;
+  object-fit: cover;
+  box-shadow: var(--bayangan);
+  transition: transform var(--transisi);
+}
+.produk-utama__foto:hover{ transform: scale(1.015); }
+
 .produk-utama__teks h3{ font-size: 1.7rem; margin-bottom: 16px; }
 .produk-utama__teks p{ opacity: 0.8; }
 .produk-utama__teks p + p{ margin-top: 12px; }
@@ -325,25 +335,6 @@ button{ font-family: inherit; cursor: pointer; }
   margin-bottom: 8px;
 }
 
-.placeholder-photo{
-  position: relative;
-  border-radius: var(--radius);
-  overflow: hidden;
-  aspect-ratio: 4 / 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    repeating-linear-gradient(135deg, rgba(79,122,92,0.14) 0 14px, rgba(79,122,92,0.05) 14px 28px),
-    linear-gradient(160deg, #dfd5b8, #cbbf9c);
-  border: 1px solid rgba(34,41,31,0.15);
-  color: var(--hijau-tua);
-  text-align: center;
-}
-.placeholder-photo__isi{ padding: 20px; }
-.placeholder-photo__isi svg{ width: 34px; height: 34px; margin: 0 auto 10px; fill: var(--hijau-tua); opacity: 0.6; }
-.placeholder-photo__isi span{ display: block; font-size: 0.82rem; font-weight: 600; opacity: 0.65; }
-
 .herbal-list{
   max-width: 1080px;
   margin: 0 auto;
@@ -366,8 +357,19 @@ button{ font-family: inherit; cursor: pointer; }
   grid-template-columns: 1.1fr 0.9fr;
   gap: 14px;
 }
-.herbal-item__media .placeholder-photo:first-child{ aspect-ratio: 3/4; }
-.herbal-item__media .placeholder-photo:last-child{ aspect-ratio: 3/4; margin-top: 32px; }
+.herbal-item__foto{
+  width: 100%;
+  border-radius: var(--radius);
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  box-shadow: var(--bayangan);
+  transition: transform var(--transisi), box-shadow var(--transisi);
+}
+.herbal-item__foto:last-child{ margin-top: 32px; }
+.herbal-item__foto:hover{
+  transform: scale(1.02);
+  box-shadow: 0 20px 50px -16px rgba(22,48,42,0.5);
+}
 
 .herbal-item__text{
   padding: 8px 6px;
@@ -427,11 +429,11 @@ button{ font-family: inherit; cursor: pointer; }
   max-width: 1080px;
   margin: 0 auto;
   column-count: 3;
-  column-gap: 18px;
+  column-gap: 16px;
 }
 .galeri-item{
   break-inside: avoid;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
@@ -439,27 +441,25 @@ button{ font-family: inherit; cursor: pointer; }
   transition: transform var(--transisi);
 }
 .galeri-item:hover{ transform: translateY(-6px); }
-.galeri-item .placeholder-photo{
-  border-radius: 0;
-  border: none;
-  background:
-    repeating-linear-gradient(135deg, rgba(211,162,76,0.14) 0 14px, rgba(211,162,76,0.04) 14px 28px),
-    linear-gradient(160deg, #24493e, #16302a);
-  color: var(--krem);
+.galeri-item img{
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 600ms ease;
 }
-.galeri-item .placeholder-photo__isi svg{ fill: var(--emas-terang); }
-.galeri-item .placeholder-photo__isi span{ color: var(--emas-terang); opacity: 0.8; }
-.galeri-item:nth-child(1) .placeholder-photo{ aspect-ratio: 3/4; }
-.galeri-item:nth-child(2) .placeholder-photo{ aspect-ratio: 1/1; }
-.galeri-item:nth-child(3) .placeholder-photo{ aspect-ratio: 4/5; }
-.galeri-item:nth-child(4) .placeholder-photo{ aspect-ratio: 3/4; }
-.galeri-item:nth-child(5) .placeholder-photo{ aspect-ratio: 1/1; }
-.galeri-item:nth-child(6) .placeholder-photo{ aspect-ratio: 4/5; }
-.galeri-item:nth-child(7) .placeholder-photo{ aspect-ratio: 3/4; }
-.galeri-item:nth-child(8) .placeholder-photo{ aspect-ratio: 1/1; }
+.galeri-item:hover img{ transform: scale(1.06); }
 
-@media (max-width: 780px){ .galeri-masonry{ column-count: 2; } }
-@media (max-width: 480px){ .galeri-masonry{ column-count: 1; } }
+/* Control image heights so landscape photos don't dominate */
+.galeri-item img{ max-height: 320px; }
+
+@media (max-width: 780px){
+  .galeri-masonry{ column-count: 2; }
+  .galeri-item img{ max-height: 260px; }
+}
+@media (max-width: 480px){
+  .galeri-masonry{ column-count: 1; }
+  .galeri-item img{ max-height: 240px; }
+}
 
 /* ===================== ANGGOTA (flip card) ===================== */
 .anggota-grid{
@@ -503,9 +503,27 @@ button{ font-family: inherit; cursor: pointer; }
   padding: 20px;
   color: var(--krem);
 }
-.flip-card__front .placeholder-icon svg{ width: 34px; height: 34px; fill: var(--hijau-tua); opacity: 0.45; }
-.flip-card__front h3{ font-size: 1.2rem; margin-top: auto; }
-.flip-card__front span{ font-size: 0.78rem; opacity: 0.75; letter-spacing: 0.05em; }
+.flip-card__front::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, rgba(22,48,42,0.88), rgba(22,48,42,0.05) 55%);
+  border-radius: var(--radius);
+}
+.flip-card__front .flip-card__foto{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius);
+  z-index: 0;
+  transition: transform 600ms ease;
+}
+.flip-card:hover .flip-card__front .flip-card__foto{ transform: scale(1.05); }
+.flip-card__front h3{ position: relative; z-index: 2; font-size: 1.2rem; margin-top: auto; }
+.flip-card__front span{ position: relative; z-index: 2; font-size: 0.78rem; opacity: 0.75; letter-spacing: 0.05em; }
 
 .flip-card__back{
   background: linear-gradient(160deg, var(--hijau-tua-2), var(--hijau-tua));
@@ -673,6 +691,8 @@ button{ font-family: inherit; cursor: pointer; }
   margin: 0 auto 22px;
   border: 4px solid var(--emas-terang);
   overflow: hidden;
+  object-fit: cover;
+  display: block;
 }
 .biodata__header h1{ font-size: 2.1rem; }
 .biodata__header p{ margin-top: 8px; color: var(--emas-terang); font-family: var(--font-display); font-style: italic; }
