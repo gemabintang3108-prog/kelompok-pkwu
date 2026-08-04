@@ -297,6 +297,34 @@ button{ font-family: inherit; cursor: pointer; }
 .produk-utama__teks p{ opacity: 0.8; }
 .produk-utama__teks p + p{ margin-top: 12px; }
 
+/* ===================== PRODUK UTAMA INFO ===================== */
+.produk-utama__info{
+  margin-top: 10px;
+}
+.produk-utama__info h4{
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 18px 0 8px;
+  color: var(--hijau-daun);
+}
+.produk-utama__info ul,
+.produk-utama__info ol{
+  margin: 0 0 6px;
+  padding-left: 22px;
+}
+.produk-utama__info li{
+  font-size: 0.9rem;
+  opacity: 0.82;
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+.produk-utama__info p{
+  font-size: 0.92rem;
+  opacity: 0.8;
+  margin-bottom: 8px;
+}
+
 .placeholder-photo{
   position: relative;
   border-radius: var(--radius);
@@ -353,6 +381,33 @@ button{ font-family: inherit; cursor: pointer; }
   display: block;
 }
 .herbal-item__text h3{ font-size: 1.7rem; margin-bottom: 12px; }
+/* ===================== HERBAL INFO (enhanced) ===================== */
+.herbal-item__info{
+  margin: 10px 0 14px;
+}
+.herbal-item__info h4{
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 14px 0 6px;
+  color: var(--hijau-daun);
+}
+.herbal-item__info ul{
+  margin: 0 0 6px;
+  padding-left: 20px;
+}
+.herbal-item__info li{
+  font-size: 0.88rem;
+  opacity: 0.82;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+.herbal-item__info p{
+  font-size: 0.88rem;
+  opacity: 0.78;
+  margin-bottom: 6px;
+}
+
 .herbal-item__text p{ opacity: 0.78; margin-bottom: 10px; }
 .herbal-item__produk{
   margin-top: 16px;
@@ -411,14 +466,14 @@ button{ font-family: inherit; cursor: pointer; }
   max-width: 1080px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 26px;
 }
 
 .flip-card{
   display: block;
   perspective: 1400px;
-  height: 340px;
+  height: 320px;
 }
 .flip-card__inner{
   position: relative;
@@ -473,7 +528,7 @@ button{ font-family: inherit; cursor: pointer; }
 }
 
 @media (max-width: 900px){ .anggota-grid{ grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px){ .anggota-grid{ grid-template-columns: 1fr; } }
+@media (max-width: 600px){ .anggota-grid{ grid-template-columns: 1fr; } }
 
 /* ===================== ULASAN ===================== */
 .ulasan-wrap{
