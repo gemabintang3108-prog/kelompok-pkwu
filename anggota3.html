@@ -61,7 +61,46 @@
       </div>
     </div>
   </div>
+
+  <!-- =================== TUGAS =================== -->
+  <div id="tugas-section" class="tugas-section" data-anggota="gema">
+    <h3 class="tugas-section__judul">📋 Tugas Saya</h3>
+
+    <!-- Login Box -->
+    <div id="tugas-login" class="tugas-login">
+      <p>Masukkan password untuk upload tugas:</p>
+      <div class="tugas-login__row">
+        <input type="password" id="tugas-password" placeholder="Password" class="tugas-input">
+        <button id="tugas-login-btn" class="btn btn--primary">Masuk</button>
+      </div>
+      <p id="tugas-login-error" class="tugas-error" style="display:none"></p>
+    </div>
+
+    <!-- Upload Box -->
+    <div id="tugas-upload" class="tugas-upload" style="display:none">
+      <div id="tugas-dropzone" class="tugas-dropzone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Seret file ke sini atau klik untuk memilih</p>
+        <input type="file" id="tugas-file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar" class="tugas-file-input">
+      </div>
+      <span id="tugas-nama-file" class="tugas-nama-file" style="display:none"></span>
+      <div id="tugas-progress" class="tugas-progress" style="display:none">
+        <div id="tugas-progress-bar" class="tugas-progress-bar"></div>
+      </div>
+      <button id="tugas-upload-btn" class="btn btn--primary" disabled>Upload Tugas</button>
+    </div>
+
+    <!-- Tugas List -->
+    <div id="tugas-list" class="tugas-list">    </div>
+  </div>
 </div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="tugas.js"></script>
 
 </body>
 </html>

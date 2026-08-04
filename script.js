@@ -1,11 +1,9 @@
 // ============================================================
 // PENTAVA — script.js
-// Sistem ulasan (rating bintang + komentar) dengan localStorage
+// Sistem ulasan (rating bintang + komentar) dengan Firebase Firestore
 // ============================================================
 
 (function () {
-  const KUNCI_PENYIMPANAN = "pentava_ulasan";
-
   const form = document.getElementById("review-form");
   const inputNama = document.getElementById("nama");
   const inputKomentar = document.getElementById("komentar");
@@ -14,7 +12,16 @@
 
   if (!form) return; // halaman ini tidak punya bagian ulasan (mis. anggota1.html)
 
+  const db = window.db;
+  if (!db) {
+    console.error("Firebase Firestore belum terinisialisasi.");
+    return;
+  }
+
+  const ULASAN_REF = db.collection("ulasan");
+
   let ratingTerpilih = 0;
+  let unsubscribeUlasan = null;
 
   // --- bangun 5 tombol bintang ---
   const svgBintang = () =>
@@ -43,22 +50,9 @@
     tampilkanPratinjau(nilai);
   }
 
-  // --- ambil & simpan data ---
-  function ambilUlasan() {
-    try {
-      const data = JSON.parse(localStorage.getItem(KUNCI_PENYIMPANAN));
-      return Array.isArray(data) ? data : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function simpanUlasan(daftar) {
-    localStorage.setItem(KUNCI_PENYIMPANAN, JSON.stringify(daftar));
-  }
-
-  function formatTanggal(iso) {
-    const tgl = new Date(iso);
+  function formatTanggal(ts) {
+    if (!ts) return "-";
+    const tgl = ts.toDate ? ts.toDate() : new Date(ts);
     return tgl.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
@@ -74,8 +68,13 @@
     return html;
   }
 
-  function renderUlasan() {
-    const daftar = ambilUlasan();
+  function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderUlasanList(daftar) {
     listUlasan.innerHTML = "";
 
     if (daftar.length === 0) {
@@ -83,31 +82,42 @@
       return;
     }
 
-    daftar
-      .slice()
-      .reverse()
-      .forEach((ulasan) => {
-        const kartu = document.createElement("article");
-        kartu.className = "review-card glass";
-        kartu.innerHTML = `
-          <div class="review-card__top">
-            <span class="review-card__nama">${escapeHTML(ulasan.nama)}</span>
-            <span class="review-card__tanggal">${formatTanggal(ulasan.tanggal)}</span>
-          </div>
-          <div class="review-card__bintang">${buatKartuBintang(ulasan.rating)}</div>
-          <p class="review-card__teks">${escapeHTML(ulasan.komentar)}</p>
-        `;
-        listUlasan.appendChild(kartu);
-      });
+    daftar.forEach((ulasan) => {
+      const kartu = document.createElement("article");
+      kartu.className = "review-card glass";
+      kartu.innerHTML = `
+        <div class="review-card__top">
+          <span class="review-card__nama">${escapeHTML(ulasan.nama)}</span>
+          <span class="review-card__tanggal">${formatTanggal(ulasan.tanggal)}</span>
+        </div>
+        <div class="review-card__bintang">${buatKartuBintang(ulasan.rating)}</div>
+        <p class="review-card__teks">${escapeHTML(ulasan.komentar)}</p>
+      `;
+      listUlasan.appendChild(kartu);
+    });
   }
 
-  function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+  // --- Real-time listener untuk ulasan ---
+  function mulaiDengarUlasan() {
+    if (unsubscribeUlasan) unsubscribeUlasan();
+
+    unsubscribeUlasan = ULASAN_REF.orderBy("tanggal", "desc").onSnapshot(
+      (snapshot) => {
+        const daftar = [];
+        snapshot.forEach((doc) => {
+          daftar.push({ id: doc.id, ...doc.data() });
+        });
+        renderUlasanList(daftar);
+      },
+      (error) => {
+        console.error("Gagal memuat ulasan:", error);
+        listUlasan.innerHTML = `<p class="review-list__kosong">Gagal memuat ulasan. Coba refresh halaman.</p>`;
+      }
+    );
   }
 
-  form.addEventListener("submit", function (e) {
+  // --- Submit ulasan baru ---
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const nama = inputNama.value.trim();
@@ -122,20 +132,37 @@
       return;
     }
 
-    const daftar = ambilUlasan();
-    daftar.push({
-      nama,
-      komentar,
-      rating: ratingTerpilih,
-      tanggal: new Date().toISOString(),
-    });
-    simpanUlasan(daftar);
+    // Disable tombol submit sementara
+    const btnSubmit = form.querySelector('button[type="submit"]');
+    const originalText = btnSubmit.textContent;
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Mengirim...";
 
-    form.reset();
-    ratingTerpilih = 0;
-    tampilkanPratinjau(0);
-    renderUlasan();
+    try {
+      await ULASAN_REF.add({
+        nama,
+        komentar,
+        rating: ratingTerpilih,
+        tanggal: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      form.reset();
+      ratingTerpilih = 0;
+      tampilkanPratinjau(0);
+    } catch (error) {
+      console.error("Gagal mengirim ulasan:", error);
+      alert("Gagal mengirim ulasan. Coba lagi ya.");
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = originalText;
+    }
   });
 
-  renderUlasan();
+  // Mulai dengar perubahan ulasan secara real-time
+  mulaiDengarUlasan();
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    if (unsubscribeUlasan) unsubscribeUlasan();
+  });
 })();
