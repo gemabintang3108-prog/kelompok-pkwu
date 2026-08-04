@@ -746,3 +746,243 @@ button{ font-family: inherit; cursor: pointer; }
   .hero__content{ padding: 40px 26px 40px; }
   .infografis-box{ flex-direction: column; align-items: flex-start; }
 }
+
+/* ===================== TUGAS (upload per anggota) ===================== */
+.tugas-section{
+  max-width: 800px;
+  margin: 40px auto 0;
+  padding: 32px 28px;
+  background: rgba(79,122,92,0.06);
+  border: 1px solid var(--garis);
+  border-radius: var(--radius);
+}
+.tugas-section__judul{
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--hijau-tua);
+  margin-bottom: 20px;
+}
+
+/* Login Box */
+.tugas-login{
+  text-align: center;
+}
+.tugas-login p{
+  color: var(--hijau-tua);
+  opacity: 0.8;
+  margin-bottom: 14px;
+}
+.tugas-login__row{
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  max-width: 340px;
+  margin: 0 auto;
+}
+.tugas-input{
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--garis);
+  background: var(--krem);
+  color: var(--hijau-tua);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color var(--transisi);
+}
+.tugas-input:focus{ border-color: var(--hijau-daun); }
+.tugas-error{
+  color: #c0392b;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+/* Upload Box */
+.tugas-upload{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.tugas-dropzone{
+  width: 100%;
+  max-width: 480px;
+  padding: 36px 24px;
+  border: 2px dashed var(--hijau-daun);
+  border-radius: var(--radius);
+  background: rgba(79,122,92,0.04);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transisi);
+  position: relative;
+}
+.tugas-dropzone:hover,
+.tugas-dropzone--active{
+  border-color: var(--hijau-tua);
+  background: rgba(79,122,92,0.1);
+}
+.tugas-dropzone svg{
+  width: 40px;
+  height: 40px;
+  stroke: var(--hijau-daun);
+  margin-bottom: 10px;
+}
+.tugas-dropzone p{
+  font-size: 0.9rem;
+  color: var(--hijau-tua);
+  opacity: 0.7;
+}
+.tugas-file-input{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.tugas-nama-file{
+  font-size: 0.85rem;
+  color: var(--hijau-tua);
+  font-weight: 600;
+  background: rgba(79,122,92,0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Progress bar */
+.tugas-progress{
+  width: 100%;
+  max-width: 480px;
+  height: 22px;
+  background: rgba(79,122,92,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+.tugas-progress-bar{
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--hijau-daun), var(--hijau-tua));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: var(--krem);
+  font-weight: 700;
+  transition: width 300ms ease;
+}
+
+/* Tugas List */
+.tugas-list{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  width: 100%;
+}
+.tugas-list__kosong{
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--hijau-tua);
+  opacity: 0.5;
+  font-style: italic;
+  padding: 30px 0;
+}
+
+/* Tugas Card */
+.tugas-card{
+  background: var(--krem);
+  border: 1px solid var(--garis);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+  transition: transform var(--transisi), box-shadow var(--transisi);
+}
+.tugas-card:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px -12px rgba(22,48,42,0.35);
+}
+.tugas-card__preview{
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--hijau-tua-2), var(--hijau-tua));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tugas-card__preview a{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.tugas-card__preview img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 500ms ease;
+}
+.tugas-card:hover .tugas-card__preview img{ transform: scale(1.06); }
+.tugas-card__preview--file{
+  flex-direction: column;
+  gap: 6px;
+}
+.tugas-card__icon{ font-size: 2.4rem; }
+.tugas-card__ext{
+  font-size: 0.75rem;
+  color: var(--emas-terang);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tugas-card__info{
+  padding: 12px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tugas-card__nama{
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--hijau-tua);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tugas-card__meta{
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+.tugas-card__download{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  background: rgba(22,48,42,0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all var(--transisi);
+}
+.tugas-card__download svg{
+  width: 16px;
+  height: 16px;
+  color: var(--krem);
+}
+.tugas-card:hover .tugas-card__download{
+  opacity: 1;
+  transform: translateY(0);
+}
+.tugas-card__download:hover{ background: var(--hijau-tua); }
