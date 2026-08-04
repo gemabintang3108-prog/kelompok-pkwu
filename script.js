@@ -1,10 +1,10 @@
 // ============================================================
-// AKAR NUSANTARA — script.js
+// PENTAVA — script.js
 // Sistem ulasan (rating bintang + komentar) dengan localStorage
 // ============================================================
 
 (function () {
-  const KUNCI_PENYIMPANAN = "akarNusantara_ulasan";
+  const KUNCI_PENYIMPANAN = "pentava_ulasan";
 
   const form = document.getElementById("review-form");
   const inputNama = document.getElementById("nama");
