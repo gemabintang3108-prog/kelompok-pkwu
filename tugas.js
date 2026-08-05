@@ -1,22 +1,17 @@
 // ============================================================
 // PENTAVA — tugas.js
-// Sistem upload & tampilan tugas per anggota (Firebase Storage + Firestore)
+// Sistem upload & tampilan tugas per anggota
+// Penyimpanan: localStorage browser (tanpa Firebase / tanpa server)
 // Password: Bintang31
+// Catatan: maksimal 2MB per file karena keterbatasan localStorage.
 // ============================================================
 
 (function () {
   const KATA_SANDI = "Bintang31";
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
   const tugasSection = document.getElementById("tugas-section");
   if (!tugasSection) return;
-
-  const db = window.db;
-  const st = window.storage;
-  if (!db || !st) {
-    console.error("Firebase belum terinisialisasi.");
-    return;
-  }
 
   // Ambil nama anggota dari halaman
   const namaAnggota = tugasSection.dataset.anggota;
@@ -25,8 +20,7 @@
     return;
   }
 
-  const TUGAS_REF = db.collection("tugas");
-  const STORAGE_REF = st.ref().child("tugas/" + namaAnggota);
+  const KUNCI_TUGAS = "pentava_tugas_" + namaAnggota;
 
   // Elemen DOM
   const loginBox = document.getElementById("tugas-login");
@@ -44,7 +38,7 @@
   if (!loginBox || !uploadBox || !tugasList) return;
 
   let isUnlocked = false;
-  let unsubscribeTugas = null;
+  let successTimeout = null;
 
   // --- Login / Password Gate ---
   loginBtn.addEventListener("click", () => {
@@ -68,20 +62,27 @@
 
   // --- File Input Handler ---
   fileInput.addEventListener("change", () => {
+    // Batalkan reset sukses yang belum jalan (kalau user ganti file)
+    if (successTimeout) {
+      clearTimeout(successTimeout);
+      successTimeout = null;
+    }
+
     const file = fileInput.files[0];
     if (!file) return;
 
-    // Validasi ukuran
+    // Validasi ukuran (batas localStorage)
     if (file.size > MAX_FILE_SIZE) {
-      alert("Ukuran file maksimal 10MB!");
+      alert("Ukuran file maksimal 2MB (batas penyimpanan browser)!");
       fileInput.value = "";
       return;
     }
 
-    // Tampilkan nama file
+    // Tampilkan nama file & reset label tombol
     uploadNama.textContent = file.name;
     uploadNama.style.display = "block";
     uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload Tugas";
   });
 
   // --- Drag & Drop ---
@@ -104,8 +105,28 @@
     });
   }
 
-  // --- Upload File ---
-  uploadBtn.addEventListener("click", async () => {
+  // --- Baca / tulis localStorage ---
+  function bacaTugas() {
+    try {
+      const data = JSON.parse(localStorage.getItem(KUNCI_TUGAS));
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function simpanTugas(daftar) {
+    try {
+      localStorage.setItem(KUNCI_TUGAS, JSON.stringify(daftar));
+    } catch (e) {
+      throw new Error(
+        "Penyimpanan browser penuh. Hapus beberapa file lama atau gunakan file yang lebih kecil."
+      );
+    }
+  }
+
+  // --- Upload File (disimpan sebagai data URL di localStorage) ---
+  uploadBtn.addEventListener("click", () => {
     if (!isUnlocked) return;
 
     const file = fileInput.files[0];
@@ -114,59 +135,56 @@
       return;
     }
 
-    // Disable tombol
+    // Disable tombol & tampilkan progress
     uploadBtn.disabled = true;
-    uploadBtn.textContent = "Mengupload...";
+    uploadBtn.textContent = "Menyimpan...";
     uploadProgress.style.display = "block";
+    uploadProgressBar.style.width = "0%";
+    uploadProgressBar.textContent = "0%";
 
-    try {
-      // Generate nama file unik
-      const timestamp = Date.now();
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const fileName = `${timestamp}_${safeName}`;
-      const fileRef = STORAGE_REF.child(fileName);
+    // Progress simulasi (FileReader sangat cepat, biar ada feedback visual)
+    let progres = 8;
+    const timerProgres = setInterval(() => {
+      progres = Math.min(progres + 14, 85);
+      uploadProgressBar.style.width = progres + "%";
+      uploadProgressBar.textContent = progres + "%";
+    }, 130);
 
-      // Upload dengan progress
-      const uploadTask = fileRef.put(file);
+    const pembaca = new FileReader();
+    pembaca.onload = () => {
+      clearInterval(timerProgres);
+      try {
+        const daftar = bacaTugas();
+        daftar.unshift({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          anggota: namaAnggota,
+          namaFile: file.name,
+          url: pembaca.result, // data URL
+          tipe: file.type.startsWith("image/") ? "image" : "file",
+          ukuran: file.size,
+          tanggal: Date.now(),
+        });
+        simpanTugas(daftar);
 
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          uploadProgressBar.style.width = progress + "%";
-          uploadProgressBar.textContent = Math.round(progress) + "%";
-        },
-        (error) => {
-          console.error("Upload gagal:", error);
-          alert("Upload gagal: " + error.message);
-          resetUploadUI();
-        },
-        async () => {
-          // Upload selesai — dapat URL
-          const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-
-          // Simpan metadata ke Firestore
-          await TUGAS_REF.add({
-            anggota: namaAnggota,
-            namaFile: file.name,
-            url: downloadURL,
-            storagePath: fileRef.fullPath,
-            tipe: file.type.startsWith("image/") ? "image" : "file",
-            ukuran: file.size,
-            tanggal: firebase.firestore.FieldValue.serverTimestamp(),
-          });
-
-          // Reset form
-          fileInput.value = "";
-          uploadNama.style.display = "none";
-          resetUploadUI();
-        }
-      );
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Terjadi kesalahan saat upload.");
+        uploadProgressBar.style.width = "100%";
+        uploadProgressBar.textContent = "100%";
+        fileInput.value = "";
+        uploadNama.style.display = "none";
+        uploadBtn.textContent = "Upload Berhasil ✓";
+        renderTugasList(daftar);
+        successTimeout = setTimeout(resetUploadUI, 2000);
+      } catch (err) {
+        console.error("Upload gagal:", err);
+        alert("Upload gagal: " + err.message);
+        resetUploadUI();
+      }
+    };
+    pembaca.onerror = () => {
+      clearInterval(timerProgres);
+      alert("Gagal membaca file. Coba pilih file lain.");
       resetUploadUI();
-    }
+    };
+    pembaca.readAsDataURL(file);
   });
 
   function resetUploadUI() {
@@ -177,7 +195,7 @@
     uploadProgressBar.textContent = "";
   }
 
-  // --- Render Tugas List (real-time) ---
+  // --- Render Tugas List ---
   function renderTugasList(daftar) {
     tugasList.innerHTML = "";
 
@@ -190,15 +208,17 @@
       const kartu = document.createElement("div");
       kartu.className = "tugas-card";
 
-      const tanggalStr = tugas.tanggal
-        ? (tugas.tanggal.toDate ? tugas.tanggal.toDate() : new Date(tugas.tanggal))
-            .toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-        : "-";
-
+      const tanggalStr = formatTanggal(tugas.tanggal);
       const ukuranStr = tugas.ukuran ? formatUkuran(tugas.ukuran) : "";
+
+      const tombolHapus =
+        `<button type="button" class="tugas-card__hapus" data-hapus="${tugas.id}" title="Hapus file" aria-label="Hapus file">` +
+        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>` +
+        `</button>`;
 
       if (tugas.tipe === "image") {
         kartu.innerHTML = `
+          ${tombolHapus}
           <div class="tugas-card__preview">
             <a href="${tugas.url}" target="_blank" rel="noopener">
               <img src="${tugas.url}" alt="${escapeHTML(tugas.namaFile)}" loading="lazy">
@@ -216,10 +236,11 @@
         // File (PDF, DOC, dsb)
         const iconFile = getFileIcon(tugas.namaFile);
         kartu.innerHTML = `
+          ${tombolHapus}
           <div class="tugas-card__preview tugas-card__preview--file">
             <a href="${tugas.url}" target="_blank" rel="noopener">
               <span class="tugas-card__icon">${iconFile}</span>
-              <span class="tugas-card__ext">${getExtension(tugas.namaFile)}</span>
+              <span class="tugas-card__ext">${escapeHTML(getExtension(tugas.namaFile))}</span>
             </a>
           </div>
           <div class="tugas-card__info">
@@ -232,7 +253,30 @@
         `;
       }
 
+      // Hapus file (biar penyimpanan browser nggak penuh permanen)
+      kartu.querySelector("[data-hapus]").addEventListener("click", () => {
+        if (!confirm("Hapus file ini dari daftar?")) return;
+        const sisa = bacaTugas().filter((t) => t.id !== tugas.id);
+        try {
+          simpanTugas(sisa);
+          renderTugasList(sisa);
+        } catch (err) {
+          alert("Gagal menghapus: " + err.message);
+        }
+      });
+
       tugasList.appendChild(kartu);
+    });
+  }
+
+  function formatTanggal(ts) {
+    if (!ts) return "-";
+    const tgl = new Date(ts);
+    if (isNaN(tgl.getTime())) return "-";
+    return tgl.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
     });
   }
 
@@ -260,36 +304,21 @@
   function escapeHTML(str) {
     const div = document.createElement("div");
     div.textContent = str;
-    return div.innerHTML;
+    // innerHTML sudah meng-escape & < > ; tambahkan tanda kutip supaya
+    // aman dipakai di dalam atribut (title, alt, download, dsb)
+    return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // --- Real-time listener ---
-  function mulaiDengarTugas() {
-    unsubscribeTugas = TUGAS_REF.where("anggota", "==", namaAnggota)
-      .onSnapshot(
-        (snapshot) => {
-          const daftar = [];
-          snapshot.forEach((doc) => {
-            daftar.push({ id: doc.id, ...doc.data() });
-          });
-          // Sort client-side by tanggal descending
-          daftar.sort((a, b) => {
-            const ta = a.tanggal?.toMillis?.() || 0;
-            const tb = b.tanggal?.toMillis?.() || 0;
-            return tb - ta;
-          });
-          renderTugasList(daftar);
-        },
-        (error) => {
-          console.error("Gagal memuat tugas:", error);
-          tugasList.innerHTML = `<p class="tugas-list__kosong">Gagal memuat tugas. Coba refresh halaman.</p>`;
-        }
-      );
+  // --- Muat daftar tugas ---
+  function muatTugas() {
+    const daftar = bacaTugas().sort((a, b) => (b.tanggal || 0) - (a.tanggal || 0));
+    renderTugasList(daftar);
   }
 
-  mulaiDengarTugas();
-
-  window.addEventListener("beforeunload", () => {
-    if (unsubscribeTugas) unsubscribeTugas();
+  // refresh otomatis kalau ada tab lain yang upload
+  window.addEventListener("storage", (e) => {
+    if (e.key === KUNCI_TUGAS) muatTugas();
   });
+
+  muatTugas();
 })();

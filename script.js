@@ -1,27 +1,89 @@
 // ============================================================
 // PENTAVA — script.js
-// Sistem ulasan (rating bintang + komentar) dengan Firebase Firestore
+// 1) Lightbox: galeri dokumentasi (Sub 2) + modal "Lihat Manfaat" (Sub 1)
+// 2) Ulasan: rating bintang + komentar (localStorage — tanpa Firebase)
 // ============================================================
 
 (function () {
+  /* ===================== LIGHTBOX ===================== */
+  const lightbox = document.getElementById("lightbox");
+
+  if (lightbox) {
+    const bodyLightbox = lightbox.querySelector(".lightbox__body");
+    const tombolTutup = lightbox.querySelector(".lightbox__close");
+    let fokusSebelumnya = null;
+
+    function bukaLightbox(konten, modeFoto) {
+      bodyLightbox.innerHTML = "";
+      bodyLightbox.classList.toggle("lightbox__body--foto", !!modeFoto);
+      bodyLightbox.appendChild(konten);
+      lightbox.hidden = false;
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden"; // kunci scroll halaman
+      fokusSebelumnya = document.activeElement;
+      tombolTutup.focus();
+    }
+
+    function tutupLightbox() {
+      if (lightbox.hidden) return;
+      lightbox.hidden = true;
+      lightbox.setAttribute("aria-hidden", "true");
+      bodyLightbox.innerHTML = "";
+      document.body.style.overflow = "";
+      if (fokusSebelumnya && typeof fokusSebelumnya.focus === "function") {
+        fokusSebelumnya.focus();
+      }
+    }
+
+    tombolTutup.addEventListener("click", tutupLightbox);
+    lightbox.addEventListener("click", (e) => {
+      if (e.target.classList.contains("lightbox__backdrop")) tutupLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !lightbox.hidden) tutupLightbox();
+    });
+
+    // --- Sub 2: klik foto dokumentasi = perbesar ---
+    document.querySelectorAll(".galeri-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const img = item.querySelector("img");
+        if (!img) return;
+        const fotoBesar = document.createElement("img");
+        fotoBesar.src = img.src;
+        fotoBesar.alt = img.alt || "Foto dokumentasi";
+        fotoBesar.className = "lightbox__img";
+        bukaLightbox(fotoBesar, true);
+      });
+      item.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          item.click();
+        }
+      });
+    });
+
+    // --- Sub 1: tombol "Lihat Manfaat" membuka isi dari <template> ---
+    document.querySelectorAll("[data-manfaat]").forEach((tombol) => {
+      tombol.addEventListener("click", () => {
+        const tpl = document.getElementById(tombol.dataset.manfaat);
+        if (!tpl) return;
+        bukaLightbox(tpl.content.cloneNode(true), false);
+      });
+    });
+  }
+
+  /* ===================== ULASAN (localStorage) ===================== */
   const form = document.getElementById("review-form");
+  if (!form) return;
+
   const inputNama = document.getElementById("nama");
   const inputKomentar = document.getElementById("komentar");
   const daftarBintang = document.getElementById("star-rating");
   const listUlasan = document.getElementById("review-list");
 
-  if (!form) return; // halaman ini tidak punya bagian ulasan (mis. anggota1.html)
-
-  const db = window.db;
-  if (!db) {
-    console.error("Firebase Firestore belum terinisialisasi.");
-    return;
-  }
-
-  const ULASAN_REF = db.collection("ulasan");
+  const KUNCI_ULASAN = "pentava_ulasan_v1";
 
   let ratingTerpilih = 0;
-  let unsubscribeUlasan = null;
 
   // --- bangun 5 tombol bintang ---
   const svgBintang = () =>
@@ -50,9 +112,24 @@
     tampilkanPratinjau(nilai);
   }
 
+  // --- baca / tulis localStorage ---
+  function bacaUlasan() {
+    try {
+      const data = JSON.parse(localStorage.getItem(KUNCI_ULASAN));
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function simpanUlasan(daftar) {
+    localStorage.setItem(KUNCI_ULASAN, JSON.stringify(daftar));
+  }
+
   function formatTanggal(ts) {
     if (!ts) return "-";
-    const tgl = ts.toDate ? ts.toDate() : new Date(ts);
+    const tgl = new Date(ts);
+    if (isNaN(tgl.getTime())) return "-";
     return tgl.toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
@@ -71,7 +148,9 @@
   function escapeHTML(str) {
     const div = document.createElement("div");
     div.textContent = str;
-    return div.innerHTML;
+    // innerHTML sudah meng-escape & < > ; tambahkan tanda kutip supaya
+    // aman dipakai di dalam atribut (title, alt, download, dsb)
+    return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function renderUlasanList(daftar) {
@@ -97,27 +176,40 @@
     });
   }
 
-  // --- Real-time listener untuk ulasan ---
-  function mulaiDengarUlasan() {
-    if (unsubscribeUlasan) unsubscribeUlasan();
+  function muatUlasan() {
+    let daftar = bacaUlasan();
 
-    unsubscribeUlasan = ULASAN_REF.orderBy("tanggal", "desc").onSnapshot(
-      (snapshot) => {
-        const daftar = [];
-        snapshot.forEach((doc) => {
-          daftar.push({ id: doc.id, ...doc.data() });
-        });
-        renderUlasanList(daftar);
-      },
-      (error) => {
-        console.error("Gagal memuat ulasan:", error);
-        listUlasan.innerHTML = `<p class="review-list__kosong">Gagal memuat ulasan. Coba refresh halaman.</p>`;
+    // Kalau kosong, isi dengan beberapa contoh supaya bagian ini tidak kosong
+    if (daftar.length === 0) {
+      daftar = [
+        {
+          id: "contoh-1",
+          nama: "Ibu Siti Rahma",
+          komentar: "Lulurnya wangi rempah alami banget, kulit terasa lebih halus setelah beberapa kali pakai. Recommended!",
+          rating: 5,
+          tanggal: Date.now() - 6 * 86400000,
+        },
+        {
+          id: "contoh-2",
+          nama: "Bapak Budi Santoso",
+          komentar: "Jamu beras kencurnya enak dan bikin badan nggak gampang lemes. Cocok diminum pagi hari.",
+          rating: 4,
+          tanggal: Date.now() - 2 * 86400000,
+        },
+      ];
+      try {
+        simpanUlasan(daftar);
+      } catch (e) {
+        // penyimpanan tidak tersedia — contoh ulasan tetap tampil saja
       }
-    );
+    }
+
+    daftar.sort((a, b) => (b.tanggal || 0) - (a.tanggal || 0));
+    renderUlasanList(daftar);
   }
 
   // --- Submit ulasan baru ---
-  form.addEventListener("submit", async function (e) {
+  form.addEventListener("submit", function (e) {
     e.preventDefault();
 
     const nama = inputNama.value.trim();
@@ -132,37 +224,40 @@
       return;
     }
 
-    // Disable tombol submit sementara
     const btnSubmit = form.querySelector('button[type="submit"]');
     const originalText = btnSubmit.textContent;
     btnSubmit.disabled = true;
     btnSubmit.textContent = "Mengirim...";
 
     try {
-      await ULASAN_REF.add({
+      const daftar = bacaUlasan();
+      daftar.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         nama,
         komentar,
         rating: ratingTerpilih,
-        tanggal: firebase.firestore.FieldValue.serverTimestamp(),
+        tanggal: Date.now(),
       });
+      simpanUlasan(daftar);
 
       form.reset();
       ratingTerpilih = 0;
       tampilkanPratinjau(0);
+      muatUlasan();
     } catch (error) {
-      console.error("Gagal mengirim ulasan:", error);
-      alert("Gagal mengirim ulasan. Coba lagi ya.");
+      console.error("Gagal menyimpan ulasan:", error);
+      alert("Gagal menyimpan ulasan. Penyimpanan browser penuh atau tidak tersedia.");
     } finally {
       btnSubmit.disabled = false;
       btnSubmit.textContent = originalText;
     }
   });
 
-  // Mulai dengar perubahan ulasan secara real-time
-  mulaiDengarUlasan();
-
-  // Cleanup on page unload
-  window.addEventListener("beforeunload", () => {
-    if (unsubscribeUlasan) unsubscribeUlasan();
+  // refresh otomatis kalau ada tab lain yang menambah ulasan
+  window.addEventListener("storage", (e) => {
+    if (e.key === KUNCI_ULASAN) muatUlasan();
   });
+
+  // Tampilkan ulasan saat halaman dibuka
+  muatUlasan();
 })();
